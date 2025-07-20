@@ -1,0 +1,1802 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INFINITE KARAOKE</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* Perhatian: Jika Anda memiliki file font 'digital-font.ttf', pastikan pathnya benar.
+           Jika tidak, font akan diabaikan dan browser akan menggunakan font fallback. */
+        @font-face {
+            font-family: 'Digital';
+            /* Ganti 'path/to/your/digital-font.ttf' dengan lokasi font Anda yang sebenarnya.
+               Contoh: Jika 'digital-font.ttf' ada di folder yang sama dengan HTML, cukup 'digital-font.ttf' */
+            src: url('path/to/your/digital-font.ttf') format('truetype');
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #2c2c2c; /* Warna background gelap */
+            overflow: hidden; /* Sembunyikan scrollbar utama agar aplikasi tampak 'framed' */
+            color: #eee;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Pastikan body setidaknya setinggi viewport */
+            /* Background Image for Body */
+            background-image: url('path/to/your/background-image.jpg'); /* Ganti dengan path gambar background Anda */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed; /* Agar background tidak ikut discroll */
+            opacity: 0.9; /* Sedikit transparan agar tidak terlalu mendominasi */
+        }
+
+        .karaoke-app {
+            width: 95vw; /* Lebar keseluruhan aplikasi, mendekati fullscreen */
+            height: 95vh; /* Tinggi keseluruhan aplikasi, mendekati fullscreen */
+            background-color: #1a1a1a; /* Warna dasar aplikasi */
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column; /* Konten disusun vertikal: header, main, footer */
+            overflow: hidden; /* Sembunyikan overflow internal jika ada */
+            position: relative;
+        }
+
+        /* --- Header --- */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: linear-gradient(to bottom, #444, #222); /* Gradient abu-abu gelap */
+            border-bottom: 2px solid #555;
+            height: 60px; /* Tinggi tetap untuk header */
+            box-sizing: border-box;
+            flex-shrink: 0; /* Pastikan header tidak mengecil */
+        }
+
+        .header-left button {
+            background-color: #666;
+            color: white;
+            border: 1px solid #777;
+            border-radius: 5px;
+            padding: 8px 15px;
+            margin-right: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transition: background-color 0.2s ease;
+        }
+        .header-left button:hover {
+            background-color: #777;
+        }
+        .header-left button.active {
+            background-color: #007bff; /* Warna biru untuk aktif */
+            border-color: #0056b3;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px; /* Jarak antar elemen */
+        }
+        .header-right .logo-text {
+            font-family: 'Digital', cursive; /* Gunakan font digital jika ada */
+            font-size: 2em;
+            color: #d8b800; /* Warna kuning emas */
+            text-shadow: 0 0 5px rgba(255, 255, 0, 0.5);
+        }
+        .header-right .music-icon {
+            width: 30px;
+            height: 30px;
+            background-color: #a0a0a0;
+            border-radius: 5px;
+            /* Placeholder for an actual icon */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5em;
+            color: #fff;
+        }
+
+
+        /* --- Main Content Area --- */
+        .main-content {
+            display: flex;
+            flex-grow: 1; /* PENTING: Memenuhi sisa ruang vertikal antara header dan footer */
+            padding: 15px;
+            gap: 15px;
+            background-color: #2a2a2a; /* Background area konten */
+            position: relative; /* Untuk posisi sofa */
+            z-index: 1; /* Pastikan konten di atas sofa */
+            overflow: hidden; /* Pastikan tidak ada scrollbar di main-content itu sendiri */
+        }
+
+        /* --- Left Panel (Song List) --- */
+        .left-panel {
+            width: 400px; /* Lebar tetap untuk panel kiri */
+            min-width: 350px; /* Pastikan tidak terlalu kecil */
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column; /* PENTING: Untuk menyusun elemen vertikal dan flex-grow */
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            flex-shrink: 0; /* PENTING: Mencegah panel kiri mengecil */
+        }
+
+        /* Youtube Controls */
+        .Youtube-controls,
+        .search-controls {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+            flex-shrink: 0; /* Pastikan kontrol pencarian tidak mengecil */
+        }
+        .Youtube-controls input,
+        .search-controls input {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: white;
+            border-radius: 4px; /* Changed from 44px to 4px for consistency */
+            font-size: 0.95em;
+        }
+        .Youtube-controls button,
+        .search-controls button {
+            background-color: #007bff; /* Biru */
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            flex-shrink: 0; /* Pastikan tombol tidak mengecil */
+        }
+        .Youtube-controls button:hover,
+        .search-controls button:hover {
+            background-color: #0056b3;
+        }
+        .Youtube-controls button.clr,
+        .search-controls button.clr {
+            background-color: #dc3545; /* Merah */
+        }
+        .Youtube-controls button.clr:hover,
+        .search-controls button.clr:hover {
+            background-color: #c82333;
+        }
+
+        /* Filter Genre Buttons */
+        .genre-filters {
+            display: flex;
+            flex-wrap: wrap; /* Agar tombol bisa pindah baris jika terlalu banyak */
+            gap: 5px;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+            justify-content: flex-start; /* Sejajarkan ke kiri */
+        }
+        .genre-filters button {
+            background-color: #444;
+            color: white;
+            border: 1px solid #666;
+            border-radius: 20px; /* Bentuk pil */
+            padding: 5px 12px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+            white-space: nowrap; /* Jangan biarkan teks pecah */
+        }
+        .genre-filters button:hover {
+            background-color: #555;
+            border-color: #888;
+        }
+        .genre-filters button.active {
+            background-color: #007bff; /* Biru aktif */
+            border-color: #0056b3;
+            font-weight: bold;
+        }
+
+
+        .song-list-container {
+            flex-grow: 1; /* PENTING: Agar list lagu memenuhi sisa ruang vertikal di panel kiri */
+            overflow-y: auto; /* PENTING: Scrollable list */
+            background-color: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 5px;
+            box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.3);
+            list-style: none; /* Hapus bullet point default */
+            margin: 0;
+        }
+        /* Scrollbar styling untuk WebKit (Chrome, Safari, Edge) */
+        .song-list-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .song-list-container::-webkit-scrollbar-track {
+            background: #2a2a2a;
+            border-radius: 10px;
+        }
+        .song-list-container::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 10px;
+        }
+        .song-list-container::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+
+
+        .song-list-item {
+            display: flex;
+            justify-content: space-between; /* PENTING: Dorong elemen ke ujung */
+            align-items: center;
+            padding: 8px 10px;
+            margin-bottom: 2px;
+            background-color: #333; /* Warna item lagu */
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-left 0.2s ease;
+            border-left: 3px solid transparent;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .song-list-item:hover {
+            background-color: #444;
+        }
+        .song-list-item.selected {
+            background-color: #007bff; /* Warna biru untuk yang terpilih */
+            border-left: 3px solid #ffc107; /* Garis kuning di kiri */
+            font-weight: bold;
+        }
+        .song-list-item .song-details {
+            flex-grow: 1;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            padding-right: 10px; /* Space between text and buttons */
+        }
+        .song-list-item .song-title {
+            color: #eee;
+            font-size: 1.05em;
+            display: block;
+        }
+        .song-list-item .song-source {
+            font-size: 0.8em;
+            color: #bbb;
+            display: block;
+        }
+        .song-list-item .song-actions {
+            display: flex;
+            gap: 5px;
+            flex-shrink: 0; /* Pastikan tombol aksi tidak mengecil */
+        }
+        .song-list-item .add-to-queue-btn,
+        .song-list-item .add-to-local-btn, /* New style for add to local button */
+        .song-list-item .delete-song-btn {
+            border: none;
+            border-radius: 3px;
+            padding: 5px 8px;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            text-transform: uppercase;
+        }
+        .song-list-item .add-to-queue-btn {
+            background-color: #ffc107; /* Kuning */
+            color: #333;
+        }
+        .song-list-item .add-to-queue-btn:hover {
+            background-color: #e0a800;
+            transform: translateY(-1px);
+        }
+        .song-list-item .add-to-queue-btn:active {
+            transform: translateY(1px);
+        }
+        .song-list-item .add-to-local-btn { /* Style for add to local button */
+            background-color: #28a745; /* Green */
+            color: white;
+        }
+        .song-list-item .add-to-local-btn:hover {
+            background-color: #218838;
+            transform: translateY(-1px);
+        }
+        .song-list-item .add-to-local-btn:active {
+            transform: translateY(1px);
+        }
+        .song-list-item .delete-song-btn {
+            background-color: #dc3545; /* Merah */
+            color: white;
+        }
+        .song-list-item .delete-song-btn:hover {
+            background-color: #c82333;
+            transform: translateY(-1px);
+        }
+        .song-list-item .delete-song-btn:active {
+            transform: translateY(1px);
+        }
+
+
+        /* --- Right Panel (Video Player & Info & Playlist) --- */
+        .right-panel {
+            flex-grow: 1; /* PENTING: Mengambil sisa ruang horizontal di main-content */
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            display: flex; /* Menggunakan flexbox untuk sub-elemen (player-content-wrapper dan playlist-box) */
+            gap: 15px; /* Jarak antara video dan playlist */
+            position: relative; /* Untuk sofa */
+            overflow: hidden; /* Pastikan konten di dalam panel kanan tidak meluap */
+        }
+
+        /* Pembungkus untuk player dan info */
+        .player-content-wrapper {
+            flex-grow: 1; /* PENTING: Mengambil sebagian besar ruang horizontal di right-panel */
+            display: flex;
+            flex-direction: column; /* Video dan info di bawahnya */
+            background-color: #2a2a2a; /* Warna background untuk area player */
+            border-radius: 5px;
+            padding: 10px;
+            flex-shrink: 1; /* Bisa mengecil jika diperlukan, tapi playlist diutamakan tidak mengecil */
+            min-width: 400px; /* Minimal lebar player agar tidak terlalu kecil */
+            justify-content: center; /* Pusatkan konten secara vertikal */
+            align-items: center; /* Pusatkan konten secara horizontal */
+        }
+
+        .player-top-buttons {
+            display: none; /* Sembunyikan tombol-tombol di atas player */
+        }
+
+        .player-container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px; /* Batas lebar maksimum untuk player */
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+            overflow: hidden;
+            background-color: #000;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            flex-shrink: 0; /* Pastikan player tidak mengecil di vertikal */
+        }
+        #player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .current-song-info {
+            background-color: #000;
+            color: #0f0; /* Hijau neon */
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-family: 'Digital', monospace; /* Font monospace untuk info lagu */
+            font-size: 1.1em;
+            text-align: left;
+            margin-bottom: 0px; /* Tidak ada margin bawah agar menempel playlist */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+            flex-shrink: 0; /* Pastikan info lagu tidak mengecil */
+            width: 100%; /* Agar info lagu mengikuti lebar player-content-wrapper */
+            max-width: 1000px; /* Sama dengan player */
+        }
+
+        /* --- Playlist Box (Sekarang di samping video) --- */
+        .playlist-box {
+            width: 280px; /* Lebar tetap untuk playlist */
+            min-width: 250px; /* PENTING: Pastikan tidak mengecil di bawah lebar ini */
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            display: flex;
+            flex-direction: column; /* PENTING: Untuk menyusun elemen vertikal dan flex-grow */
+            flex-shrink: 0; /* PENTING: Jangan biarkan playlist mengecil secara horizontal */
+        }
+        .playlist-box h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #007bff;
+            text-align: left;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+            flex-shrink: 0; /* Jangan biarkan header playlist mengecil */
+        }
+        .playlist-list-container {
+            flex-grow: 1; /* PENTING: Agar list playlist memenuhi sisa ruang vertikal di playlist-box */
+            overflow-y: auto; /* PENTING: Memastikan scrollbar muncul jika konten terlalu banyak */
+            background-color: #1a1a1a;
+            border: 1px solid #444;
+            border-radius: 5px;
+            padding: 5px;
+            box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.3);
+            list-style: none;
+            margin: 0;
+        }
+        /* Scrollbar styling untuk WebKit (Chrome, Safari, Edge) */
+        .playlist-list-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .playlist-list-container::-webkit-scrollbar-track {
+            background: #2a2a2a;
+            border-radius: 10px;
+        }
+        .playlist-list-container::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 10px;
+        }
+        .playlist-list-container::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+
+        .playlist-item {
+            padding: 8px 10px;
+            margin-bottom: 2px;
+            background-color: #444; /* Warna item playlist */
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-left 0.2s ease;
+            border-left: 3px solid transparent;
+            display: flex; /* Gunakan flexbox */
+            align-items: center; /* Sejajarkan vertikal */
+            justify-content: space-between; /* Dorong elemen ke ujung */
+        }
+        .playlist-item:hover {
+            background-color: #555;
+        }
+        .playlist-item.playing {
+            background-color: #28a745; /* Hijau untuk yang sedang diputar */
+            border-left: 3px solid #ffc107;
+            font-weight: bold;
+        }
+        .playlist-item .song-details { /* Add this style for playlist song details */
+            flex-grow: 1; /* Allow text to take available space */
+            overflow: hidden; /* Hide overflow */
+            white-space: nowrap; /* Prevent text wrapping */
+            text-overflow: ellipsis; /* Add ellipsis for overflowed text */
+            padding-right: 10px; /* Add some space before the button */
+        }
+        .playlist-item .remove-from-queue-btn {
+            background-color: #dc3545; /* Merah */
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 3px 6px;
+            font-size: 0.7em;
+            cursor: pointer;
+            margin-left: 10px; /* Memberikan sedikit jarak dari teks */
+            transition: background-color 0.2s ease;
+            flex-shrink: 0; /* PENTING: Pastikan tombol hapus tidak mengecil */
+        }
+        .playlist-item .remove-from-queue-btn:hover {
+            background-color: #c82333;
+        }
+
+        .delete-all-data-btn-container {
+            margin-top: 15px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        #deleteAllDataBtn {
+            background-color: #dc3545; /* Merah */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        #deleteAllDataBtn:hover {
+            background-color: #c82333;
+            transform: translateY(-1px);
+        }
+        #deleteAllDataBtn:active {
+            transform: translateY(1px);
+        }
+
+        /* --- Sofa Background (Central Decorative Element) --- */
+        .sofa-decor {
+            position: absolute;
+            bottom: 0px; /* Posisikan lebih rendah agar tidak menutupi playlist */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px; /* Sesuaikan ukuran sofa */
+            height: 350px; /* Sesuaikan tinggi sofa */
+            background: url('Capture.jpg') no-repeat center bottom / contain;
+            z-index: 0; /* Pastikan di belakang elemen lain */
+            pointer-events: none; /* Tidak bisa diklik */
+            opacity: 0.7; /* Sedikit transparan agar tidak terlalu mendominasi */
+        }
+
+        /* --- Bottom Controls (Player Controls) --- */
+        .bottom-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(to top, #004488, #002244); /* Gradient biru gelap */
+            border-top: 2px solid #007bff; /* Garis atas biru */
+            padding: 10px 20px;
+            height: 70px; /* Tinggi tetap untuk kontrol bawah */
+            box-sizing: border-box;
+            gap: 15px;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5); /* Tambah shadow dalam */
+            flex-shrink: 0; /* PENTING: Pastikan footer tidak mengecil secara vertikal */
+            width: 100%; /* Pastikan mengambil lebar penuh kontainer parent */
+        }
+
+        .bottom-controls .time-display {
+            font-family: 'Digital', monospace;
+            font-size: 1.2em;
+            color: #88eeff; /* Biru muda cerah untuk waktu */
+            min-width: 80px; /* Lebar minimum agar tidak terpotong */
+            text-align: center;
+            text-shadow: 0 0 5px rgba(136, 238, 255, 0.7); /* Efek neon ringan */
+            flex-shrink: 0; /* Jangan biarkan teks waktu mengecil */
+        }
+
+        .progress-bar-container {
+            flex-grow: 1; /* PENTING: Ambil ruang sebanyak mungkin yang tersisa */
+            height: 12px; /* Ditingkatkan untuk kejelasan */
+            background-color: #003366; /* Warna dasar progress bar lebih gelap */
+            border-radius: 6px; /* Sesuai dengan tinggi */
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+            border: 1px solid #0056b3; /* Tambahkan border untuk memperjelas */
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%; /* Diatur oleh JS */
+            background-color: #007bff; /* Biru */
+            border-radius: 6px;
+            transition: width 0.1s linear; /* Animasi halus */
+            box-shadow: inset 0 0 5px rgba(0, 123, 255, 0.5); /* Efek glowing */
+        }
+        .progress-bar-handle {
+            position: absolute;
+            top: 50%; /* Pusatkan vertikal */
+            transform: translate(-50%, -50%); /* Pusatkan vertikal dan horizontal */
+            width: 20px; /* Ukuran handle lebih besar */
+            height: 20px; /* Ukuran handle lebih besar */
+            background-color: #88eeff; /* Handle biru muda */
+            border-radius: 50%;
+            left: 0%; /* Diatur oleh JS */
+            box-shadow: 0 0 10px rgba(136, 238, 255, 0.8), 0 0 5px rgba(255, 255, 255, 0.5) inset; /* Shadow yang lebih jelas dan inset */
+            cursor: grab;
+            display: none; /* Sembunyikan handle sampai di hover */
+            border: 2px solid rgba(255, 255, 255, 0.8); /* Border putih tipis */
+        }
+        .progress-bar-container:hover .progress-bar-handle {
+            display: block;
+        }
+
+
+        .bottom-controls button {
+            background-color: #0056b3; /* Biru sedang */
+            color: white;
+            border: 1px solid #007bff; /* Border biru terang */
+            border-radius: 5px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            min-width: 60px; /* Agar tombol tidak terlalu kecil */
+            flex-shrink: 0; /* PENTING: Pastikan tombol tidak mengecil */
+        }
+        .bottom-controls button:hover {
+            background-color: #007bff; /* Biru lebih terang saat hover */
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+        .bottom-controls button:active {
+            transform: translateY(1px);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .bottom-controls .icon-button {
+            background: none; /* Hapus background default */
+            border: none; /* Hapus border default */
+            font-size: 2em; /* Ukuran ikon lebih besar */
+            color: #88eeff; /* Warna ikon biru muda */
+            cursor: pointer;
+            padding: 0 8px; /* Padding lebih luas agar mudah diklik */
+            transition: color 0.2s ease, transform 0.1s ease;
+            min-width: unset; /* Reset min-width */
+            box-shadow: none; /* Hapus shadow */
+            flex-shrink: 0; /* PENTING: Pastikan tombol ikon tidak mengecil */
+        }
+        .bottom-controls .icon-button:hover {
+            color: #fff; /* Putih saat hover */
+            transform: scale(1.1); /* Sedikit membesar */
+            background-color: rgba(0, 123, 255, 0.2); /* Background transparan biru */
+            border-radius: 50%;
+        }
+        .bottom-controls .icon-button:active {
+            transform: scale(0.9);
+        }
+
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-shrink: 0; /* PENTING: Pastikan kontrol volume tidak mengecil */
+        }
+        .volume-control input[type="range"] {
+            width: 100px; /* Sedikit lebih lebar */
+            -webkit-appearance: none;
+            height: 12px; /* Lebih tebal */
+            background: #003366; /* Warna track biru gelap */
+            border-radius: 6px;
+            outline: none;
+            cursor: pointer;
+            box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5); /* Shadow inset lebih dalam */
+            border: 1px solid #0056b3; /* Border untuk memperjelas */
+        }
+        .volume-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px; /* Ukuran thumb lebih besar */
+            height: 22px; /* Ukuran thumb lebih besar */
+            border-radius: 50%;
+            background: #007bff; /* Warna thumb biru */
+            cursor: grab;
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.7), 0 0 5px rgba(255, 255, 255, 0.5) inset; /* Shadow yang lebih jelas dan inset */
+            border: 2px solid rgba(255, 255, 255, 0.8); /* Border putih tebal */
+            transition: background-color 0.2s ease;
+        }
+        .volume-control input[type="range"]::-webkit-slider-thumb:hover {
+            background: #0056b3;
+        }
+        .volume-control input[type="range"]::-moz-range-thumb {
+            width: 22px; /* Ukuran thumb lebih besar */
+            height: 22px; /* Ukuran thumb lebih besar */
+            border-radius: 50%;
+            background: #007bff; /* Warna thumb biru */
+            cursor: grab;
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.7), 0 0 5px rgba(255, 255, 255, 0.5) inset; /* Shadow yang lebih jelas dan inset */
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            transition: background-color 0.2s ease;
+        }
+        .volume-control input[type="range"]::-moz-range-thumb:hover {
+            background: #0056b3;
+        }
+
+
+        /* --- Modal for New Entry --- */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.7); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #2a2a2a;
+            margin: auto;
+            padding: 30px;
+            border: 1px solid #888;
+            border-radius: 10px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            position: relative;
+            color: #eee;
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            cursor: pointer;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: #007bff;
+            margin-bottom: 20px;
+        }
+
+        .modal-content label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .modal-content input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #555;
+            background-color: #333;
+            color: white;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        .modal-content button {
+            background-color: #28a745;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s ease;
+        }
+        .modal-content button:hover {
+            background-color: #218838;
+        }
+
+        /* --- Toast Notification --- */
+        .toast-notification {
+            visibility: hidden; /* Hidden by default */
+            min-width: 250px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1001; /* Higher than modal */
+            left: 50%;
+            top: 50%; /* Center vertically */
+            transform: translate(-50%, -50%); /* Center horizontally and vertically */
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .toast-notification.show {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="karaoke-app">
+        <div class="header">
+            <div class="header-left">
+                <button id="btnFavorite">FAVORITE</button>
+                <button id="btnNewEntry">NEW ENTRY</button>
+                <button id="btnImportExcel">IMPORT EXCEL</button>
+                <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display: none;">
+                <button id="btnAll" class="active">ALL</button>
+            </div>
+            <div class="header-right">
+                <span class="music-icon">🎵</span>
+                <span class="logo-text">INFINITE KARAOKE</span>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="Youtube-controls">
+                    <input type="text" id="youtubeSearchInput" placeholder="Cari di YouTube...">
+                    <button id="youtubeSearchButton">YT SEARCH</button>
+                    <button class="clr" id="clearYoutubeSearch">CLR</button>
+                </div>
+
+                <div class="search-controls">
+                    <input type="text" id="searchInput" placeholder="Cari judul, artis, atau genre...">
+                    <button class="clr" id="clearSearch">CLR</button>
+                    <button id="performSearch">SEARCH</button>
+                </div>
+
+                <div class="genre-filters" id="genreFilters">
+                    </div>
+
+                <div class="song-list-container" id="songListContainer">
+                    </div>
+
+                <div class="delete-all-data-btn-container">
+                    <button id="deleteAllDataBtn">HAPUS SEMUA DATA</button>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="player-content-wrapper">
+                    <div class="player-container">
+                        <div id="player"></div>
+                    </div>
+                    <div class="current-song-info" id="currentSongInfo">
+                        Lagu Sedang Diputar: -
+                    </div>
+                </div>
+
+                <div class="playlist-box">
+                    <h3>Antrean Playlist</h3>
+                    <div class="playlist-list-container" id="playlistListContainer">
+                        </div>
+                </div>
+            </div>
+            <div class="sofa-decor"></div> </div>
+
+        <div class="bottom-controls">
+            <span class="time-display" id="currentTime">00:00</span>
+            <div class="progress-bar-container" id="progressBarContainer">
+                <div class="progress-bar-fill" id="progressBarFill"></div>
+                <div class="progress-bar-handle" id="progressBarHandle"></div>
+            </div>
+            <span class="time-display" id="totalTime">00:00</span>
+
+            <button>VOCAL: OFF</button>
+            <button id="prevButton">PREV</button>
+            <button id="rewindButton">REW</button>
+            <button id="playPauseButton">PLAY / PAUSE</button>
+            <button id="nextButton">NEXT</button>
+            <button class="icon-button" id="muteButton">🔇</button>
+            <div class="volume-control">
+                <input type="range" id="volumeSlider" min="0" max="100" value="70">
+            </div>
+            <button class="icon-button" id="fullscreenButton">🖧</button> <button class="icon-button" id="exitButton">✖</button> </div>
+    </div>
+
+    <div id="newEntryModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">×</span>
+            <h2>Tambah Lagu Baru</h2>
+            <label for="newSongTitle">Judul Lagu:</label>
+            <input type="text" id="newSongTitle" placeholder="Masukkan judul lagu">
+            <label for="newSongArtist">Artis:</label>
+            <input type="text" id="newSongArtist" placeholder="Masukkan nama artis">
+            <label for="newSongGenre">Genre (Contoh: Pop, Dangdut, Rock):</label>
+            <input type="text" id="newSongGenre" placeholder="Masukkan genre lagu">
+            <label for="newSongYoutubeId">ID Video YouTube:</label>
+            <input type="text" id="newSongYoutubeId" placeholder="Misal: dQw4w9WgXcQ">
+            <button id="saveNewSong">Simpan Lagu</button>
+        </div>
+    </div>
+
+    <div id="toastNotification" class="toast-notification"></div>
+
+    <script>
+        let player;
+        let localSongs = []; // Array untuk menyimpan data lagu lokal (perpustakaan)
+        let songQueue = []; // Array untuk menyimpan playlist/antrean lagu
+        let currentPlayingIndex = -1; // Index lagu yang sedang diputar di songQueue
+        let currentMainFilter = 'ALL'; // 'ALL', 'FAVORITE', 'SEARCH', 'Youtube'
+        let currentGenreFilter = 'Semua'; // New: default genre filter
+        let youtubeSearchResults = []; // New: Array to store Youtube results
+
+        // API Key YouTube Anda
+        const YOUTUBE_API_KEY = 'AIzaSyC0C8iLUyHcqb5Gc0dWMl2t-w9sUOu6qE4'; 
+        // URL API YouTube yang BENAR (ini adalah URL resmi dari Google)
+        const YOUTUBE_IFRAME_API_URL = "https://www.youtube.com/iframe_api";
+
+        // Load YouTube IFrame Player API
+        const tag = document.createElement('script');
+        tag.src = YOUTUBE_IFRAME_API_URL; 
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        // --- YouTube Player API Functions ---
+        // Fungsi ini akan dipanggil secara otomatis oleh YouTube API ketika siap
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                height: '100%',
+                width: '100%',
+                videoId: '', // Akan diatur secara dinamis nanti
+                playerVars: {
+                    'playsinline': 1,
+                    'controls': 0, // Sembunyikan kontrol YouTube bawaan
+                    'autoplay': 0,
+                    'iv_load_policy': 3, // Sembunyikan anotasi
+                    'modestbranding': 1, // Sembunyikan logo YouTube di kontrol
+                    'rel': 0 // Jangan tampilkan video terkait di akhir
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+
+        function onPlayerReady(event) {
+            console.log("YouTube Player is Ready!");
+            player.setVolume(document.getElementById('volumeSlider').value);
+            loadSongs(); // Memuat lagu saat player siap
+            loadQueue(); // Memuat antrean playlist
+            updateCurrentTime(); // Memulai update waktu (initially 00:00 / 00:00)
+            renderGenreFilters(); // Panggil ini setelah lagu dimuat
+        }
+
+        let updateInterval;
+        function onPlayerStateChange(event) {
+            console.log("Player state changed to: " + event.data);
+            if (event.data === YT.PlayerState.PLAYING) {
+                updateInterval = setInterval(updateCurrentTime, 1000);
+                document.getElementById('playPauseButton').innerText = 'PAUSE';
+            } else if (event.data === YT.PlayerState.PAUSED) {
+                clearInterval(updateInterval);
+                document.getElementById('playPauseButton').innerText = 'PLAY / PAUSE';
+            } else if (event.data === YT.PlayerState.ENDED) {
+                clearInterval(updateInterval);
+                document.getElementById('currentSongInfo').innerText = 'Lagu Selesai.';
+                document.getElementById('progressBarFill').style.width = '100%';
+                document.getElementById('currentTime').innerText = formatTime(player.getDuration());
+                playNextSong(); // Putar lagu berikutnya secara otomatis
+            } else { // For buffering, unstarted etc.
+                clearInterval(updateInterval);
+                document.getElementById('playPauseButton').innerText = 'PLAY / PAUSE';
+            }
+        }
+
+        function playVideo(videoId) {
+            if (player) {
+                if (videoId) {
+                    player.loadVideoById(videoId);
+                    player.playVideo();
+                    const song = localSongs.find(s => s.id === videoId) || songQueue.find(s => s.id === videoId) || youtubeSearchResults.find(s => s.id === videoId);
+                    document.getElementById('currentSongInfo').innerText = `Lagu Sedang Diputar: ${song ? song.title + ' - ' + song.artist : 'Memuat...'}`;
+                } else if (player.getPlayerState() === YT.PlayerState.PAUSED || player.getPlayerState() === YT.PlayerState.BUFFERING) {
+                    player.playVideo();
+                } else {
+                    // If no videoId provided and player not paused, try playing current queue item
+                    if (songQueue.length > 0 && currentPlayingIndex !== -1) {
+                        playVideo(songQueue[currentPlayingIndex].id);
+                    }
+                }
+            }
+        }
+
+        function playPauseToggle() {
+            if (player) {
+                const playerState = player.getPlayerState();
+                if (playerState === YT.PlayerState.PLAYING) {
+                    player.pauseVideo();
+                } else if (playerState === YT.PlayerState.PAUSED || playerState === YT.PlayerState.ENDED || playerState === YT.PlayerState.BUFFERING) {
+                    if (songQueue.length > 0 && currentPlayingIndex !== -1) {
+                        player.playVideo();
+                    } else if (songQueue.length > 0 && currentPlayingIndex === -1) {
+                        playQueueItem(0); // Play the first song if nothing is playing
+                    }
+                } else if (playerState === YT.PlayerState.UNSTARTED && songQueue.length > 0) {
+                    if (currentPlayingIndex === -1) currentPlayingIndex = 0;
+                    playQueueItem(currentPlayingIndex);
+                }
+            }
+        }
+
+        function stopVideo() {
+            if (player && player.stopVideo) {
+                player.stopVideo();
+                document.getElementById('currentSongInfo').innerText = 'Lagu Sedang Diputar: -';
+                document.getElementById('progressBarFill').style.width = '0%';
+                document.getElementById('currentTime').innerText = '00:00';
+                document.getElementById('totalTime').innerText = '00:00';
+                currentPlayingIndex = -1; // Reset playing index
+                renderPlaylist(); // Update playlist highlight
+            }
+        }
+
+        function rewindVideo() {
+            if (player && player.getCurrentTime) {
+                player.seekTo(player.getCurrentTime() - 10, true); // Mundur 10 detik
+            }
+        }
+
+        function playNextSong() {
+            if (songQueue.length === 0) {
+                stopVideo();
+                return;
+            }
+
+            currentPlayingIndex++;
+            if (currentPlayingIndex >= songQueue.length) {
+                currentPlayingIndex = 0; // Loop playlist (kembali ke awal)
+            }
+            playQueueItem(currentPlayingIndex);
+        }
+
+        function playPreviousSong() {
+            if (songQueue.length === 0) {
+                stopVideo();
+                return;
+            }
+
+            currentPlayingIndex--;
+            if (currentPlayingIndex < 0) {
+                currentPlayingIndex = songQueue.length - 1; // Loop ke belakang (ke akhir playlist)
+            }
+            playQueueItem(currentPlayingIndex);
+        }
+
+        function playQueueItem(index) {
+            if (index >= 0 && index < songQueue.length) {
+                const song = songQueue[index];
+                playVideo(song.id);
+                currentPlayingIndex = index;
+                renderPlaylist(); // Highlight lagu yang sedang diputar di playlist
+            } else {
+                stopVideo();
+            }
+        }
+
+        // --- Fullscreen Functionality ---
+        document.getElementById('fullscreenButton').addEventListener('click', () => {
+            const iframe = player.getIframe();
+            if (iframe.requestFullscreen) {
+                iframe.requestFullscreen();
+            } else if (iframe.mozRequestFullScreen) { /* Firefox */
+                iframe.mozRequestFullScreen();
+            } else if (iframe.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+                iframe.webkitRequestFullscreen();
+            } else if (iframe.msRequestFullscreen) { /* IE/Edge */
+                iframe.msRequestFullscreen();
+            }
+        });
+
+        // --- Exit Button Functionality ---
+        document.getElementById('exitButton').addEventListener('click', () => {
+            // This will only work if the page was opened via window.open()
+            // or if it's a popup window. Modern browsers restrict closing
+            // windows that weren't opened by script for security reasons.
+            if (window.confirm('Apakah Anda yakin ingin menutup aplikasi?')) {
+                window.close();
+            }
+        });
+
+
+        // --- Time and Progress Bar ---
+        function formatTime(seconds) {
+            if (isNaN(seconds) || seconds < 0) return '00:00';
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        function updateCurrentTime() {
+            if (player && player.getCurrentTime && player.getDuration) {
+                const currentTime = player.getCurrentTime();
+                const totalTime = player.getDuration();
+                document.getElementById('currentTime').innerText = formatTime(currentTime);
+                document.getElementById('totalTime').innerText = formatTime(totalTime);
+
+                const progress = (totalTime > 0) ? (currentTime / totalTime) * 100 : 0;
+                document.getElementById('progressBarFill').style.width = `${progress}%`;
+                document.getElementById('progressBarHandle').style.left = `${progress}%`;
+            }
+        }
+
+        let isDraggingProgressBar = false;
+        document.getElementById('progressBarContainer').addEventListener('mousedown', (e) => {
+            if (player && player.getDuration && player.getDuration() > 0) {
+                isDraggingProgressBar = true;
+                seekProgressBar(e);
+            }
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (isDraggingProgressBar) {
+                seekProgressBar(e);
+            }
+        });
+        document.addEventListener('mouseup', () => {
+            isDraggingProgressBar = false;
+            // Ensure playback resumes if it was paused due to drag start (optional, depends on UX)
+            // if (player && player.getPlayerState() === YT.PlayerState.PAUSED) {
+            //     player.playVideo();
+            // }
+        });
+
+        function seekProgressBar(e) {
+            const progressBar = document.getElementById('progressBarContainer');
+            const rect = progressBar.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const percentage = Math.max(0, Math.min(1, clickX / rect.width));
+            const seekTime = percentage * player.getDuration();
+            player.seekTo(seekTime, true);
+        }
+
+        // --- Volume Control ---
+        document.getElementById('volumeSlider').addEventListener('input', function() {
+            if (player && player.setVolume) {
+                player.setVolume(this.value);
+            }
+        });
+
+        document.getElementById('muteButton').addEventListener('click', function() {
+            if (player) {
+                if (player.isMuted()) {
+                    player.unMute();
+                    this.innerText = '🔇';
+                } else {
+                    player.mute();
+                    this.innerText = '🔊';
+                }
+            }
+        });
+
+
+        // --- Song List and Data Management ---
+        function loadSongs() {
+            const storedSongs = localStorage.getItem('karaokeLocalSongs');
+            if (storedSongs) {
+                localSongs = JSON.parse(storedSongs);
+            } else {
+                // Initial dummy data if no local storage found
+                localSongs = [
+                    { id: 'kJQP7kiw5Fk', title: 'Bohemian Rhapsody (Karaoke)', artist: 'Queen', genre: 'Rock', source: 'YouTube', favorite: false },
+                    { id: 'dQw4w9WgXcQ', title: 'Never Gonna Give You Up (Karaoke)', artist: 'Rick Astley', genre: 'Pop', source: 'YouTube', favorite: true },
+                    { id: 'Zi_XLVf9_E8', title: 'Someone Like You (Karaoke)', artist: 'Adele', genre: 'Pop', source: 'YouTube', favorite: false },
+                    { id: 'kXYiU_JCYtM', title: 'A Thousand Years (Karaoke)', artist: 'Christina Perri', genre: 'Pop', source: 'YouTube', favorite: false },
+                    { id: 'z1m_5xS19H8', title: 'Indonesia Pusaka (Karaoke)', artist: 'Ismail Marzuki', genre: 'Nasional', source: 'Local Data', favorite: true },
+                    { id: 'l_R01G22m_0', title: 'Pergi Pagi Pulang Pagi', artist: 'Armada', genre: 'Pop', source: 'YouTube', favorite: false },
+                    { id: '8k4zJmR5730', title: 'Sayang', artist: 'Via Vallen', genre: 'Dangdut', source: 'YouTube', favorite: true },
+                    { id: 'h4P19zRjMvM', title: 'Cinta Luar Biasa', artist: 'Andmesh Kamaleng', genre: 'Pop', source: 'YouTube', favorite: false },
+                    { id: 'hF9Y2-wXy6A', title: 'Sebelas Duabelas', artist: 'Via Vallen', genre: 'Dangdut', source: 'YouTube', favorite: false },
+                    { id: '5WzY2h54X9s', title: 'Kopi Dangdut (Karaoke)', artist: 'Fahmy Shahab', genre: 'Dangdut', source: 'YouTube', favorite: false },
+                    { id: 'zJz3Y-V9t-8', title: 'Kerinduan (Karaoke)', artist: 'Rhoma Irama', genre: 'Dangdut', source: 'YouTube', favorite: false },
+                    { id: 'F3fE-t1F6xM', title: 'November Rain (Karaoke)', artist: 'Guns N\' Roses', genre: 'Rock', source: 'YouTube', favorite: false },
+                    { id: 'EmtGqR5wN54', title: 'Smells Like Teen Spirit (Karaoke)', artist: 'Nirvana', genre: 'Rock', source: 'YouTube', favorite: false },
+                    { id: 'Ym0gD7c48qg', title: 'All of Me (Karaoke)', artist: 'John Legend', genre: 'Jazz', source: 'YouTube', favorite: false },
+                    { id: 'Uo8C93vYgJc', title: 'Fly Me To The Moon (Karaoke)', artist: 'Frank Sinatra', genre: 'Jazz', source: 'YouTube', favorite: true },
+                ];
+                saveSongs();
+            }
+            renderSongList();
+        }
+
+        function saveSongs() {
+            localStorage.setItem('karaokeLocalSongs', JSON.stringify(localSongs));
+        }
+
+        // --- Render Genre Filters ---
+        function renderGenreFilters() {
+            const genreFiltersContainer = document.getElementById('genreFilters');
+            genreFiltersContainer.innerHTML = '';
+
+            const allGenres = new Set(localSongs.map(song => song.genre).filter(genre => genre));
+            const sortedGenres = Array.from(allGenres).sort(); // Urutkan genre secara alfabetis
+
+            // Tombol "Semua"
+            const allBtn = document.createElement('button');
+            allBtn.innerText = 'Semua';
+            allBtn.setAttribute('data-genre', 'Semua');
+            allBtn.classList.add('genre-filter-button');
+            if (currentGenreFilter === 'Semua') {
+                allBtn.classList.add('active');
+            }
+            allBtn.addEventListener('click', (e) => {
+                currentGenreFilter = e.target.dataset.genre;
+                updateGenreFilterButtons(e.target);
+                renderSongList();
+            });
+            genreFiltersContainer.appendChild(allBtn);
+
+            // Tombol-tombol genre spesifik
+            sortedGenres.forEach(genre => {
+                const btn = document.createElement('button');
+                btn.innerText = genre;
+                btn.setAttribute('data-genre', genre);
+                btn.classList.add('genre-filter-button');
+                if (currentGenreFilter === genre) {
+                    btn.classList.add('active');
+                }
+                btn.addEventListener('click', (e) => {
+                    currentGenreFilter = e.target.dataset.genre;
+                    updateGenreFilterButtons(e.target);
+                    renderSongList();
+                });
+                genreFiltersContainer.appendChild(btn);
+            });
+        }
+
+        function updateGenreFilterButtons(activeButton) {
+            document.querySelectorAll('.genre-filter-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
+        }
+
+
+        function renderSongList(songsToDisplay = localSongs) { // Parameter baru: songsToDisplay
+            const container = document.getElementById('songListContainer');
+            container.innerHTML = ''; // Clear current list
+
+            let filteredSongs = songsToDisplay;
+
+            // Apply main filter (ALL, FAVORITE, SEARCH, Youtube)
+            if (currentMainFilter === 'FAVORITE') {
+                filteredSongs = localSongs.filter(song => song.favorite);
+                // Genre filter only applies to local songs, not Youtube results
+                if (currentGenreFilter !== 'Semua') {
+                    filteredSongs = filteredSongs.filter(song =>
+                        song.genre && song.genre.toLowerCase() === currentGenreFilter.toLowerCase()
+                    );
+                }
+            } else if (currentMainFilter === 'SEARCH') {
+                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                filteredSongs = localSongs.filter(song =>
+                    song.title.toLowerCase().includes(searchTerm) ||
+                    song.artist.toLowerCase().includes(searchTerm) ||
+                    (song.genre && song.genre.toLowerCase().includes(searchTerm))
+                );
+                if (currentGenreFilter !== 'Semua') {
+                    filteredSongs = filteredSongs.filter(song =>
+                        song.genre && song.genre.toLowerCase() === currentGenreFilter.toLowerCase()
+                    );
+                }
+            } else if (currentMainFilter === 'Youtube') {
+                filteredSongs = youtubeSearchResults;
+                // No genre filter for YouTube results
+            } else { // 'ALL'
+                filteredSongs = localSongs;
+                if (currentGenreFilter !== 'Semua') {
+                    filteredSongs = filteredSongs.filter(song =>
+                        song.genre && song.genre.toLowerCase() === currentGenreFilter.toLowerCase()
+                    );
+                }
+            }
+
+
+            if (filteredSongs.length === 0) {
+                container.innerHTML = '<div style="padding: 10px; text-align: center; color: #888;">Tidak ada lagu yang ditemukan.</div>';
+                return;
+            }
+
+            filteredSongs.forEach(song => {
+                const item = document.createElement('div');
+                item.classList.add('song-list-item');
+                item.setAttribute('data-id', song.id);
+
+                let buttonsHtml = '';
+                if (currentMainFilter === 'Youtube') {
+                    // For Youtube results, show "Add to Local" button
+                    const isAlreadyLocal = localSongs.some(localSong => localSong.id === song.id);
+                    buttonsHtml = `
+                        <button class="add-to-queue-btn" data-id="${song.id}" data-title="${song.title}" data-artist="${song.artist}">Antrean</button>
+                        ${isAlreadyLocal ? '' : `<button class="add-to-local-btn" data-id="${song.id}" data-title="${song.title}" data-artist="${song.artist}">Simpan</button>`}
+                    `;
+                } else {
+                    // For local songs, show "Antrean" and "Hapus" buttons
+                    buttonsHtml = `
+                        <button class="add-to-queue-btn" data-id="${song.id}" data-title="${song.title}" data-artist="${song.artist}">Antrean</button>
+                        <button class="delete-song-btn" data-id="${song.id}">Hapus</button>
+                    `;
+                }
+
+                item.innerHTML = `
+                    <div class="song-details">
+                        <span class="song-title">${song.title}</span><br>
+                        <span class="song-source">${song.artist} - ${song.genre || 'YouTube'}</span>
+                    </div>
+                    <div class="song-actions">
+                        ${buttonsHtml}
+                    </div>
+                `;
+                item.addEventListener('click', (e) => {
+                    // Only select if not clicking the "Antrean", "Hapus" or "Simpan" button
+                    if (!e.target.classList.contains('add-to-queue-btn') &&
+                        !e.target.classList.contains('delete-song-btn') &&
+                        !e.target.classList.contains('add-to-local-btn')) {
+                        const currentlySelected = document.querySelector('.song-list-item.selected');
+                        if (currentlySelected) {
+                            currentlySelected.classList.remove('selected');
+                        }
+                        item.classList.add('selected');
+                        document.getElementById('currentSongInfo').innerText = `Lagu Terpilih: ${song.title} - ${song.artist}`;
+                    }
+                });
+                container.appendChild(item);
+            });
+        }
+
+
+        // --- Playlist / Queue Management ---
+        function loadQueue() {
+            const storedQueue = localStorage.getItem('karaokeSongQueue');
+            if (storedQueue) {
+                songQueue = JSON.parse(storedQueue);
+            }
+            renderPlaylist();
+        }
+
+        function saveQueue() {
+            localStorage.setItem('karaokeSongQueue', JSON.stringify(songQueue));
+        }
+
+        function renderPlaylist() {
+            const container = document.getElementById('playlistListContainer');
+            container.innerHTML = '';
+
+            if (songQueue.length === 0) {
+                container.innerHTML = '<div style="padding: 10px; text-align: center; color: #888;">Playlist kosong.</div>';
+                return;
+            }
+
+            songQueue.forEach((song, index) => {
+                const item = document.createElement('div');
+                item.classList.add('playlist-item');
+                if (index === currentPlayingIndex) {
+                    item.classList.add('playing');
+                }
+                item.setAttribute('data-id', song.id);
+                item.innerHTML = `
+                    <div class="song-details">
+                        <span class="song-title">${index + 1}. ${song.title}</span><br>
+                        <span class="song-source">${song.artist}</span>
+                    </div>
+                    <button class="remove-from-queue-btn" data-index="${index}">X</button>
+                `;
+                item.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('remove-from-queue-btn')) {
+                        playQueueItem(index);
+                    }
+                });
+                container.appendChild(item);
+            });
+
+            // Add event listeners for remove buttons after rendering
+            document.querySelectorAll('.remove-from-queue-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const indexToRemove = parseInt(e.target.dataset.index);
+                    removeSongFromQueue(indexToRemove);
+                });
+            });
+        }
+
+        function addSongToQueue(song) {
+            songQueue.push(song);
+            saveQueue();
+            renderPlaylist(); // Render ulang playlist
+
+            // === Scroll otomatis playlist ke bawah ===
+            const playlistListContainer = document.getElementById('playlistListContainer');
+            playlistListContainer.scrollTop = playlistListContainer.scrollHeight;
+            // ===========================================
+
+            showToast(`"${song.title}" ditambahkan ke antrean!`); // Notifikasi toast
+        }
+
+        function removeSongFromQueue(index) {
+            if (index > -1 && index < songQueue.length) {
+                // Adjust currentPlayingIndex if the playing song is removed or a song before it
+                if (index === currentPlayingIndex) {
+                    stopVideo(); // Stop if currently playing song is removed
+                    currentPlayingIndex = -1; // Reset playing index
+                } else if (index < currentPlayingIndex) {
+                    currentPlayingIndex--; // Shift index if a song before it is removed
+                }
+
+                const removedSong = songQueue[index];
+                songQueue.splice(index, 1);
+                saveQueue();
+                renderPlaylist();
+                showToast(`"${removedSong.title}" dihapus dari antrean.`); // Notifikasi toast
+            }
+        }
+
+        // --- Delete Song from LocalSongs (Database) ---
+        function deleteSong(songId) {
+            if (!confirm('Apakah Anda yakin ingin menghapus lagu ini dari database?')) {
+                return;
+            }
+
+            const initialLength = localSongs.length;
+            const deletedSong = localSongs.find(song => song.id === songId);
+            localSongs = localSongs.filter(song => song.id !== songId);
+
+            if (localSongs.length < initialLength) {
+                saveSongs();
+                renderSongList(); // Re-render the main song list
+                renderGenreFilters(); // Update genre filters as well
+
+                // Also remove from queue if present and adjust playback
+                let removedFromQueue = false;
+                const newSongQueue = [];
+                for (let i = 0; i < songQueue.length; i++) {
+                    if (songQueue[i].id === songId) {
+                        removedFromQueue = true;
+                        if (currentPlayingIndex === i) {
+                            stopVideo();
+                            currentPlayingIndex = -1;
+                        }
+                    } else {
+                        newSongQueue.push(songQueue[i]);
+                    }
+                }
+                songQueue = newSongQueue;
+
+                if (currentPlayingIndex !== -1) {
+                    const newIndex = songQueue.findIndex(s => s.id === player.getVideoData().video_id);
+                    currentPlayingIndex = newIndex;
+                    if (newIndex === -1 && player.getPlayerState() !== YT.PlayerState.ENDED) {
+                         stopVideo();
+                    }
+                }
+
+                saveQueue();
+                renderPlaylist(); // Re-render the playlist
+
+                showToast(`"${deletedSong ? deletedSong.title : 'Lagu'}" berhasil dihapus.`); // Notifikasi toast
+            } else {
+                showToast('Lagu tidak ditemukan di database.'); // Notifikasi toast
+            }
+        }
+
+        // --- Delete All Data Function ---
+        document.getElementById('deleteAllDataBtn').addEventListener('click', () => {
+            if (confirm('PERINGATAN! Ini akan menghapus SEMUA lagu dari database Anda dan playlist. Apakah Anda yakin ingin melanjutkan?')) {
+                localStorage.removeItem('karaokeLocalSongs');
+                localStorage.removeItem('karaokeSongQueue');
+                localSongs = [];
+                songQueue = [];
+                currentPlayingIndex = -1;
+                currentMainFilter = 'ALL';
+                currentGenreFilter = 'Semua';
+
+                stopVideo(); // Stop any playing video
+                renderSongList();
+                renderPlaylist();
+                renderGenreFilters(); // Re-render genre filters (akan kosong)
+                document.getElementById('searchInput').value = ''; // Clear search input
+                document.getElementById('youtubeSearchInput').value = ''; // Clear Youtube input
+                updateHeaderButtons('btnAll'); // Reset header button
+                showToast('Semua data lagu berhasil dihapus!'); // Notifikasi toast
+            }
+        });
+
+
+        // Event listeners for "Antrean", "Hapus", "Simpan" buttons (Delegation)
+        document.getElementById('songListContainer').addEventListener('click', function(e) {
+            const target = e.target;
+            if (target.classList.contains('add-to-queue-btn')) {
+                const id = target.dataset.id;
+                const title = target.dataset.title;
+                const artist = target.dataset.artist;
+                addSongToQueue({ id, title, artist });
+            } else if (target.classList.contains('delete-song-btn')) {
+                const idToDelete = target.dataset.id;
+                deleteSong(idToDelete);
+            } else if (target.classList.contains('add-to-local-btn')) {
+                const id = target.dataset.id;
+                const title = target.dataset.title;
+                const artist = target.dataset.artist;
+                addYoutubeSongToLocal({ id, title, artist });
+            }
+        });
+
+
+        // --- Header Button Actions ---
+        document.getElementById('btnFavorite').addEventListener('click', () => {
+            currentMainFilter = 'FAVORITE';
+            updateHeaderButtons('btnFavorite');
+            document.getElementById('searchInput').value = ''; // Clear local search
+            document.getElementById('youtubeSearchInput').value = ''; // Clear Youtube
+            youtubeSearchResults = []; // Clear YouTube results
+            currentGenreFilter = 'Semua'; // Reset genre filter
+            renderGenreFilters(); // Re-render genre filters with "Semua" active
+            renderSongList();
+        });
+
+        document.getElementById('btnAll').addEventListener('click', () => {
+            currentMainFilter = 'ALL';
+            updateHeaderButtons('btnAll');
+            document.getElementById('searchInput').value = ''; // Clear local search
+            document.getElementById('youtubeSearchInput').value = ''; // Clear Youtube
+            youtubeSearchResults = []; // Clear YouTube results
+            currentGenreFilter = 'Semua'; // Reset genre filter
+            renderGenreFilters(); // Re-render genre filters with "Semua" active
+            renderSongList();
+        });
+
+        function updateHeaderButtons(activeButtonId) {
+            document.querySelectorAll('.header-left button').forEach(button => {
+                button.classList.remove('active');
+            });
+            if (activeButtonId) {
+                document.getElementById(activeButtonId).classList.add('active');
+            }
+        }
+
+        // --- Local Search Functionality ---
+        document.getElementById('performSearch').addEventListener('click', () => {
+            currentMainFilter = 'SEARCH';
+            updateHeaderButtons(''); // No specific header button active
+            document.getElementById('youtubeSearchInput').value = ''; // Clear Youtube
+            youtubeSearchResults = []; // Clear YouTube results
+            currentGenreFilter = 'Semua'; // Reset genre filter
+            renderGenreFilters(); // Re-render genre filters with "Semua" active
+            renderSongList();
+        });
+
+        document.getElementById('clearSearch').addEventListener('click', () => {
+            document.getElementById('searchInput').value = '';
+            currentMainFilter = 'ALL';
+            updateHeaderButtons('btnAll');
+            currentGenreFilter = 'Semua'; // Reset genre filter
+            renderGenreFilters(); // Re-render genre filters with "Semua" active
+            renderSongList();
+        });
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('performSearch').click();
+            }
+        });
+
+        // --- Youtube Functionality ---
+        document.getElementById('youtubeSearchButton').addEventListener('click', performYoutubeSearch);
+        document.getElementById('youtubeSearchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performYoutubeSearch();
+            }
+        });
+        document.getElementById('clearYoutubeSearch').addEventListener('click', () => {
+            document.getElementById('youtubeSearchInput').value = '';
+            youtubeSearchResults = []; // Clear YouTube results
+            currentMainFilter = 'ALL'; // Go back to showing all local songs
+            updateHeaderButtons('btnAll');
+            currentGenreFilter = 'Semua'; // Reset genre filter
+            renderGenreFilters(); // Re-render genre filters with "Semua" active
+            renderSongList();
+        });
+
+        async function performYoutubeSearch() {
+            const query = document.getElementById('youtubeSearchInput').value.trim();
+            if (!query) {
+                showToast('Masukkan kata kunci untuk mencari di YouTube.');
+                return;
+            }
+            // Pengecekan API Key yang sudah diperbaiki
+            if (YOUTUBE_API_KEY === 'GANTI_DENGAN_API_KEY_ANDA' || YOUTUBE_API_KEY === '') {
+                showToast('ERROR: Harap ganti "GANTI_DENGAN_API_KEY_ANDA" dengan YouTube Data API Key Anda yang valid di kode JavaScript!');
+                console.error("YouTube API Key is not set or is invalid.");
+                return;
+            }
+
+            showToast('Mencari di YouTube...');
+            currentMainFilter = 'Youtube'; // Ganti 'Youtube' menjadi 'Youtube' untuk konsistensi
+            updateHeaderButtons(''); // No header button active for Youtube
+            document.getElementById('searchInput').value = ''; // Clear local search input
+            document.getElementById('genreFilters').style.display = 'none'; // Hide genre filters for Youtube
+
+            youtubeSearchResults = []; // Clear previous results
+
+            try {
+                const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query + ' karaoke')}&type=video&maxResults=20&key=${YOUTUBE_API_KEY}`);
+                const data = await response.json();
+
+                if (data.items && data.items.length > 0) {
+                    youtubeSearchResults = data.items.map(item => ({
+                        id: item.id.videoId,
+                        title: item.snippet.title,
+                        artist: item.snippet.channelTitle, // Menggunakan channelTitle sebagai artis
+                        genre: 'YouTube', // Tandai sebagai dari YouTube
+                        source: 'Youtube',
+                        favorite: false
+                    }));
+                    renderSongList(youtubeSearchResults); // Render results
+                    showToast(`${youtubeSearchResults.length} hasil YouTube ditemukan.`);
+                } else {
+                    renderSongList([]); // Show empty list message
+                    showToast('Tidak ada hasil YouTube yang ditemukan.');
+                }
+            } catch (error) {
+                console.error('Error fetching Youtube results:', error);
+                showToast('Gagal mencari di YouTube. Periksa koneksi internet atau API Key Anda.');
+                renderSongList([]); // Clear list on error
+            } finally {
+                // Always re-show genre filters when done, in case the user switches back to local search
+                document.getElementById('genreFilters').style.display = 'flex'; // Re-show genre filters
+            }
+        }
+
+        function addYoutubeSongToLocal(song) {
+            // Check for duplicates before adding
+            const isDuplicate = localSongs.some(localSong => localSong.id === song.id);
+            if (isDuplicate) {
+                showToast('Lagu ini sudah ada di daftar lagu lokal Anda!');
+                return;
+            }
+
+            // Prompt for genre if needed, or set a default
+            const genre = prompt(`Masukkan genre untuk "${song.title}" (misal: Pop, Rock, Dangdut). Kosongkan untuk 'Lain-lain':`);
+            song.genre = genre ? genre.trim() : 'Lain-lain';
+            song.source = 'Youtube Saved'; // Update source
+            song.favorite = false; // Default new saved songs to not favorite
+
+            localSongs.push(song);
+            saveSongs();
+            renderSongList(youtubeSearchResults); // Re-render current YouTube results to update button state
+            renderGenreFilters(); // Re-render genre filters as a new genre might have been added
+            showToast(`"${song.title}" berhasil disimpan ke daftar lagu lokal Anda!`);
+        }
+
+
+        // --- New Entry Modal ---
+        const newEntryModal = document.getElementById('newEntryModal');
+        const closeButton = newEntryModal.querySelector('.close-button');
+        const btnNewEntry = document.getElementById('btnNewEntry');
+        const saveNewSongButton = document.getElementById('saveNewSong');
+
+        btnNewEntry.addEventListener('click', () => {
+            newEntryModal.style.display = 'flex'; // Show modal
+        });
+
+        closeButton.addEventListener('click', () => {
+            newEntryModal.style.display = 'none'; // Hide modal
+            // Clear input fields
+            document.getElementById('newSongTitle').value = '';
+            document.getElementById('newSongArtist').value = '';
+            document.getElementById('newSongGenre').value = '';
+            document.getElementById('newSongYoutubeId').value = '';
+        });
+
+        saveNewSongButton.addEventListener('click', () => {
+            const title = document.getElementById('newSongTitle').value.trim();
+            const artist = document.getElementById('newSongArtist').value.trim();
+            const genre = document.getElementById('newSongGenre').value.trim();
+            const youtubeId = document.getElementById('newSongYoutubeId').value.trim();
+
+            if (!title || !youtubeId) {
+                showToast('Judul lagu dan ID YouTube tidak boleh kosong!');
+                return;
+            }
+
+            const newSong = {
+                id: youtubeId,
+                title: title,
+                artist: artist || 'Unknown Artist',
+                genre: genre || 'Lain-lain',
+                source: 'User Added',
+                favorite: false
+            };
+
+            // Check for duplicates based on YouTube ID
+            const isDuplicate = localSongs.some(song => song.id === newSong.id);
+            if (isDuplicate) {
+                showToast('Lagu dengan ID YouTube ini sudah ada!');
+                return;
+            }
+
+            localSongs.push(newSong);
+            saveSongs();
+            renderSongList(); // Render ulang daftar lagu
+            renderGenreFilters(); // Update genre filters with new genre if any
+
+            // === Scroll otomatis daftar lagu ke bawah ===
+            const songListContainer = document.getElementById('songListContainer');
+            songListContainer.scrollTop = songListContainer.scrollHeight;
+            // ===========================================
+
+            showToast('Lagu berhasil ditambahkan!'); // Notifikasi toast
+            closeButton.click(); // Tutup modal
+        });
+
+        // --- Toast Notification Function ---
+        let toastTimeout;
+        function showToast(message) {
+            const toast = document.getElementById('toastNotification');
+            toast.innerText = message;
+            toast.classList.add('show');
+
+            clearTimeout(toastTimeout); // Clear any existing timeout
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000); // Hide after 3 seconds
+        }
+
+
+        // --- Bottom Controls Event Listeners ---
+        document.getElementById('playPauseButton').addEventListener('click', playPauseToggle);
+        document.getElementById('rewindButton').addEventListener('click', rewindVideo);
+        document.getElementById('prevButton').addEventListener('click', playPreviousSong);
+        document.getElementById('nextButton').addEventListener('click', playNextSong);
+
+        // --- Excel Import Functionality ---
+        document.getElementById('btnImportExcel').addEventListener('click', () => {
+            document.getElementById('excelFileInput').click(); // Trigger file input click
+        });
+
+        document.getElementById('excelFileInput').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                readExcelFile(file);
+            }
+        });
+
+        function readExcelFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+
+                // Ambil sheet pertama
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+
+                // Konversi sheet ke array of arrays (data mentah)
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                // Proses data
+                const importedSongs = [];
+                let addedCount = 0;
+                let duplicateCount = 0;
+
+                // Asumsi baris pertama adalah header, mulai dari baris kedua (indeks 1)
+                for (let i = 1; i < jsonData.length; i++) {
+                    const row = jsonData[i];
+                    // Asumsi kolom: A=Judul, B=Artis, C=Genre, D=YouTube ID (indeks 0, 1, 2, 3)
+                    const title = row[0] ? String(row[0]).trim() : '';
+                    const artist = row[1] ? String(row[1]).trim() : 'Unknown Artist';
+                    const genre = row[2] ? String(row[2]).trim() : 'Lain-lain';
+                    const youtubeId = row[3] ? String(row[3]).trim() : '';
+
+                    if (title && youtubeId) {
+                        const newSong = {
+                            id: youtubeId,
+                            title: title,
+                            artist: artist,
+                            genre: genre,
+                            source: 'Excel Import',
+                            favorite: false
+                        };
+
+                        // Cek duplikasi berdasarkan YouTube ID sebelum menambahkan
+                        const isDuplicate = localSongs.some(song => song.id === newSong.id) ||
+                                          importedSongs.some(song => song.id === newSong.id); // Cek juga di list yang baru diimpor
+                        if (!isDuplicate) {
+                            importedSongs.push(newSong);
+                            addedCount++;
+                        } else {
+                            duplicateCount++;
+                        }
+                    }
+                }
+
+                // Tambahkan lagu yang diimpor ke localSongs
+                if (importedSongs.length > 0) {
+                    localSongs = localSongs.concat(importedSongs);
+                    saveSongs();
+                    renderSongList();
+                    renderGenreFilters(); // Update genre filters
+                    showToast(`${addedCount} lagu berhasil diimpor! (${duplicateCount} duplikat dilewati)`);
+                } else {
+                    showToast('Tidak ada lagu baru yang valid ditemukan di file Excel atau semua lagu sudah ada.');
+                }
+
+                // Reset input file agar bisa memilih file yang sama lagi jika perlu
+                event.target.value = '';
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+    </script>
+
+</body>
+</html>
